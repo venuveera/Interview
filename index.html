@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Recorded Video Interview</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+            background: #000;
+            border-radius: 8px;
+            margin-top: 15px;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+        #questionText {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            color: #2c3e50;
+            min-height: 60px;
+        }
+        .timer-box {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            min-width: 150px;
+        }
+        .prep-mode { background: #f39c12; color: #fff; }
+        .record-mode { background: #e74c3c; color: #fff; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        button {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #95a5a6; cursor: not-allowed; }
+        
+        #results { margin-top: 30px; text-align: left; }
+        .result-item { margin-bottom: 15px; padding: 15px; background: #ecf0f1; border-radius: 6px; }
+        .result-item a { color: #3498db; font-weight: bold; text-decoration: none; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="introContainer">
+    <h1>Automated Video Interview</h1>
+    <p>You will be asked 6 questions. For each question, you will have:</p>
+    <ul style="text-align: left; display: inline-block;">
+        <li><b>30 seconds</b> to read the question and prepare.</li>
+        <li><b>2 minutes</b> to record your answer.</li>
+    </ul>
+    <p>Please ensure your camera and microphone are connected.</p>
+    <button id="startBtn">Start Interview</button>
+</div>
+
+<div class="container hidden" id="interviewContainer">
+    <div id="statusText">Question <span id="qNumber">1</span> of 6</div>
+    <h2 id="questionText">Loading...</h2>
+    
+    <div id="timerDisplay" class="timer-box prep-mode">00:30</div>
+    <br>
+    <video id="liveVideo" autoplay muted playsinline></video>
+    <br>
+    <button id="skipBtn" class="hidden">Finish Answer Early</button>
+</div>
+
+<div class="container hidden" id="resultsContainer">
+    <h2>Interview Complete</h2>
+    <p>Thank you. You can review and download your recorded answers below.</p>
+    <div id="results"></div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. EDIT YOUR SIX QUESTIONS HERE
+    // ==========================================
+    const questions = [
+        "Tell me about a time you faced a difficult challenge at work and how you handled it.",
+        "Where do you see your career progressing in the next five years?",
+        "Describe a situation where you had to work with a difficult team member.",
+        "What is your greatest professional achievement so far?",
+        "How do you prioritize your tasks when you have multiple tight deadlines?",
+        "Why are you the best fit for this role?"
+    ];
+
+    // Settings
+    const PREP_TIME = 30; // 30 seconds
+    const RECORD_TIME = 120; // 2 minutes
+
+    // State Variables
+    let currentQuestionIndex = 0;
+    let mediaRecorder;
+    let stream;
+    let recordedChunks = [];
+    let allRecordings = [];
+    let timerInterval;
+
+    // DOM Elements
+    const introContainer = document.getElementById('introContainer');
+    const interviewContainer = document.getElementById('interviewContainer');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const startBtn = document.getElementById('startBtn');
+    const liveVideo = document.getElementById('liveVideo');
+    const questionText = document.getElementById('questionText');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const qNumber = document.getElementById('qNumber');
+    const skipBtn = document.getElementById('skipBtn');
+    const resultsDiv = document.getElementById('results');
+
+    // Start Process
+    startBtn.addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            liveVideo.srcObject = stream;
+            
+            introContainer.classList.add('hidden');
+            interviewContainer.classList.remove('hidden');
+            
+            runQuestion(currentQuestionIndex);
+        } catch (err) {
+            alert("Error accessing camera/microphone. Please ensure you have granted permissions.");
+            console.error(err);
+        }
+    });
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function runQuestion(index) {
+        qNumber.innerText = index + 1;
+        questionText.innerText = questions[index];
+        skipBtn.classList.add('hidden'); // Hide early skip during prep
+        
+        // Start Prep Phase
+        timerDisplay.className = 'timer-box prep-mode';
+        let timeLeft = PREP_TIME;
+        timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                startRecordingPhase();
+            }
+        }, 1000);
+    }
+
+    function startRecordingPhase() {
+        recordedChunks = [];
+        // Use standard webm, or let browser pick default if webm is unsupported (like Safari)
+        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        if (!MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+            options = { mimeType: 'video/webm' };
+            if (!MediaRecorder.isTypeSupported('video/webm')) {
+                options = {}; // Let Safari pick mp4 automatically
+            }
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, options);
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: options.mimeType || 'video/mp4' });
+            allRecordings.push({
+                question: questions[currentQuestionIndex],
+                blob: blob
+            });
+            
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                runQuestion(currentQuestionIndex);
+            } else {
+                finishInterview();
+            }
+        };
+
+        mediaRecorder.start();
+        skipBtn.classList.remove('hidden'); // Show early finish button
+
+        // Start Record UI
+        timerDisplay.className = 'timer-box record-mode';
+        let timeLeft = RECORD_TIME;
+        timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                mediaRecorder.stop();
+            }
+        }, 1000);
+    }
+
+    // Skip Button Logic
+    skipBtn.addEventListener('click', () => {
+        clearInterval(timerInterval);
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    });
+
+    function finishInterview() {
+        interviewContainer.classList.add('hidden');
+        resultsContainer.classList.remove('hidden');
+        
+        // Stop all tracks to turn off the camera light
+        stream.getTracks().forEach(track => track.stop());
+
+        // Generate download links
+        allRecordings.forEach((record, index) => {
+            const url = URL.createObjectURL(record.blob);
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            
+            div.innerHTML = `
+                <p><strong>Q${index + 1}:</strong> ${record.question}</p>
+                <video src="${url}" controls width="300" style="background:#000; display:block; margin: 10px 0; border-radius: 4px; transform: none;"></video>
+                <a href="${url}" download="Question_${index + 1}_Answer.webm">⬇ Download Answer ${index + 1}</a>
+            `;
+            resultsDiv.appendChild(div);
+        });
+    }
+</script>
+
+</body>
+</html>
