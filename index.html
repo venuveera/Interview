@@ -229,7 +229,8 @@
             const base64Data = await blobToBase64(record.blob);
             
             const payload = {
-                filename: `Candidate_Q${record.questionNum}_Answer`,
+                // THE FIX IS HERE: Added .webm to the filename
+                filename: `Candidate_Q${record.questionNum}_Answer.webm`,
                 mimeType: record.blob.type,
                 base64: base64Data
             };
