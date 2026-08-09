@@ -217,35 +217,52 @@
         });
     }
 
-    async function finishInterviewAndUpload() {
+  async function finishInterviewAndUpload() {
         interviewContainer.classList.add('hidden');
         uploadingContainer.classList.remove('hidden');
-        stream.getTracks().forEach(track => track.stop()); // Turn off camera light
+        stream.getTracks().forEach(track => track.stop()); 
 
-        // Upload videos one by one
+        let debugMessage = "";
+
         for (let i = 0; i < allRecordings.length; i++) {
             uploadStatus.innerText = `Uploading answer ${i + 1} of ${allRecordings.length}...`;
             const record = allRecordings[i];
             const base64Data = await blobToBase64(record.blob);
             
             const payload = {
-                filename: `Candidate_Q${record.questionNum}_Answer`,
+                filename: `Candidate_Q${record.questionNum}_Answer.webm`,
                 mimeType: record.blob.type,
                 base64: base64Data
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, {
+                let response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
+                
+                // This grabs Google's secret response
+                let serverText = await response.text(); 
+                debugMessage += `Question ${record.questionNum} Server Reply: ${serverText}\n\n`;
+                
             } catch (error) {
-                console.error("Upload failed for Q" + record.questionNum, error);
+                debugMessage += `Question ${record.questionNum} Network Error: ${error.message}\n\n`;
             }
         }
 
         uploadingContainer.classList.add('hidden');
         resultsContainer.classList.remove('hidden');
+        
+        // Print the result directly to the screen
+        const debugBox = document.createElement('pre');
+        debugBox.style.background = "#eee";
+        debugBox.style.padding = "15px";
+        debugBox.style.textAlign = "left";
+        debugBox.style.fontSize = "13px";
+        debugBox.style.whiteSpace = "pre-wrap";
+        debugBox.style.wordWrap = "break-word";
+        debugBox.innerText = "DIAGNOSTIC REPORT:\n" + debugMessage;
+        resultsContainer.appendChild(debugBox);
     }
 </script>
 </body>
