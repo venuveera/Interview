@@ -35,20 +35,10 @@
             margin-top: 15px;
             transform: scaleX(-1); /* Mirror effect */
         }
-        #questionText {
-            font-size: 1.5rem;
-            margin: 20px 0;
-            color: #2c3e50;
-            min-height: 60px;
-        }
+        #questionText { font-size: 1.5rem; margin: 20px 0; color: #2c3e50; min-height: 60px; }
         .timer-box {
-            font-size: 2rem;
-            font-weight: bold;
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 8px;
-            display: inline-block;
-            min-width: 150px;
+            font-size: 2rem; font-weight: bold; margin: 15px 0; padding: 10px;
+            border-radius: 8px; display: inline-block; min-width: 150px;
         }
         .prep-mode { background: #f39c12; color: #fff; }
         .record-mode { background: #e74c3c; color: #fff; animation: pulse 1.5s infinite; }
@@ -60,61 +50,57 @@
         }
 
         button {
-            background: #3498db;
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1.1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: background 0.3s;
+            background: #3498db; color: #fff; border: none; padding: 12px 24px;
+            font-size: 1.1rem; border-radius: 6px; cursor: pointer; margin-top: 15px;
         }
         button:hover { background: #2980b9; }
-        button:disabled { background: #95a5a6; cursor: not-allowed; }
-        
-        #results { margin-top: 30px; text-align: left; }
-        .result-item { margin-bottom: 15px; padding: 15px; background: #ecf0f1; border-radius: 6px; }
-        .result-item a { color: #3498db; font-weight: bold; text-decoration: none; }
         .hidden { display: none !important; }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 6px solid #f3f3f3; border-top: 6px solid #3498db;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div class="container" id="introContainer">
     <h1>Automated Video Interview</h1>
-    <p>You will be asked 6 questions. For each question, you will have:</p>
-    <ul style="text-align: left; display: inline-block;">
-        <li><b>30 seconds</b> to read the question and prepare.</li>
-        <li><b>2 minutes</b> to record your answer.</li>
-    </ul>
-    <p>Please ensure your camera and microphone are connected.</p>
+    <p>You will be asked 6 questions.</p>
     <button id="startBtn">Start Interview</button>
 </div>
 
 <div class="container hidden" id="interviewContainer">
     <div id="statusText">Question <span id="qNumber">1</span> of 6</div>
     <h2 id="questionText">Loading...</h2>
-    
-    <div id="timerDisplay" class="timer-box prep-mode">00:30</div>
-    <br>
-    <video id="liveVideo" autoplay muted playsinline></video>
-    <br>
+    <div id="timerDisplay" class="timer-box prep-mode">00:30</div><br>
+    <video id="liveVideo" autoplay muted playsinline></video><br>
     <button id="skipBtn" class="hidden">Finish Answer Early</button>
 </div>
 
+<div class="container hidden" id="uploadingContainer">
+    <h2>Uploading your interview...</h2>
+    <p>Please do not close this window until the upload is complete.</p>
+    <div class="loader"></div>
+    <p id="uploadStatus">Uploading question 1 of 6...</p>
+</div>
+
 <div class="container hidden" id="resultsContainer">
-    <h2>Interview Complete</h2>
-    <p>Thank you. You can review and download your recorded answers below.</p>
-    <div id="results"></div>
+    <h2>Interview Complete!</h2>
+    <p>Your answers have been successfully submitted to the hiring team. You may now close this window.</p>
 </div>
 
 <script>
     // ==========================================
-    // 1. EDIT YOUR SIX QUESTIONS HERE
+    // 1. PASTE YOUR WEB APP URL HERE
     // ==========================================
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSPD5dplbV5oSbhpTVJh_TsDdoR7sj_DIcWWNr5rqcRpOWq-XeVNFnCtRZQgfy8g3W/exec";
+
     const questions = [
-        "Tell me about a time you faced a difficult challenge at work and how you handled it.",
+        "Tell me about a time you faced a difficult challenge at work.",
         "Where do you see your career progressing in the next five years?",
         "Describe a situation where you had to work with a difficult team member.",
         "What is your greatest professional achievement so far?",
@@ -122,58 +108,51 @@
         "Why are you the best fit for this role?"
     ];
 
-    // Settings
-    const PREP_TIME = 30; // 30 seconds
-    const RECORD_TIME = 120; // 2 minutes
+    const PREP_TIME = 30;
+    const RECORD_TIME = 120;
 
-    // State Variables
     let currentQuestionIndex = 0;
-    let mediaRecorder;
-    let stream;
+    let mediaRecorder, stream, timerInterval;
     let recordedChunks = [];
     let allRecordings = [];
-    let timerInterval;
 
-    // DOM Elements
+    // Elements
     const introContainer = document.getElementById('introContainer');
     const interviewContainer = document.getElementById('interviewContainer');
+    const uploadingContainer = document.getElementById('uploadingContainer');
     const resultsContainer = document.getElementById('resultsContainer');
-    const startBtn = document.getElementById('startBtn');
     const liveVideo = document.getElementById('liveVideo');
     const questionText = document.getElementById('questionText');
     const timerDisplay = document.getElementById('timerDisplay');
     const qNumber = document.getElementById('qNumber');
     const skipBtn = document.getElementById('skipBtn');
-    const resultsDiv = document.getElementById('results');
+    const uploadStatus = document.getElementById('uploadStatus');
 
-    // Start Process
-    startBtn.addEventListener('click', async () => {
+    document.getElementById('startBtn').addEventListener('click', async () => {
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            // Low resolution requested to keep file sizes small for Google Drive
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 480, height: 360 }, 
+                audio: true 
+            });
             liveVideo.srcObject = stream;
-            
             introContainer.classList.add('hidden');
             interviewContainer.classList.remove('hidden');
-            
-            runQuestion(currentQuestionIndex);
+            runQuestion(0);
         } catch (err) {
-            alert("Error accessing camera/microphone. Please ensure you have granted permissions.");
-            console.error(err);
+            alert("Error accessing camera. Please ensure permissions are granted.");
         }
     });
 
     function formatTime(seconds) {
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        return `${m}:${s}`;
+        return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
     }
 
     function runQuestion(index) {
         qNumber.innerText = index + 1;
         questionText.innerText = questions[index];
-        skipBtn.classList.add('hidden'); // Hide early skip during prep
+        skipBtn.classList.add('hidden');
         
-        // Start Prep Phase
         timerDisplay.className = 'timer-box prep-mode';
         let timeLeft = PREP_TIME;
         timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
@@ -181,7 +160,6 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
-            
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 startRecordingPhase();
@@ -191,42 +169,27 @@
 
     function startRecordingPhase() {
         recordedChunks = [];
-        // Use standard webm, or let browser pick default if webm is unsupported (like Safari)
-        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
-        if (!MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
-            options = { mimeType: 'video/webm' };
-            if (!MediaRecorder.isTypeSupported('video/webm')) {
-                options = {}; // Let Safari pick mp4 automatically
-            }
-        }
+        let options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 250000 };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) { options = {}; }
         
         mediaRecorder = new MediaRecorder(stream, options);
-        
-        mediaRecorder.ondataavailable = event => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
 
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: options.mimeType || 'video/mp4' });
-            allRecordings.push({
-                question: questions[currentQuestionIndex],
-                blob: blob
-            });
+            allRecordings.push({ blob: blob, questionNum: currentQuestionIndex + 1 });
             
             currentQuestionIndex++;
             if (currentQuestionIndex < questions.length) {
                 runQuestion(currentQuestionIndex);
             } else {
-                finishInterview();
+                finishInterviewAndUpload();
             }
         };
 
         mediaRecorder.start();
-        skipBtn.classList.remove('hidden'); // Show early finish button
-
-        // Start Record UI
+        skipBtn.classList.remove('hidden');
+        
         timerDisplay.className = 'timer-box record-mode';
         let timeLeft = RECORD_TIME;
         timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
@@ -234,7 +197,6 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
-            
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 mediaRecorder.stop();
@@ -242,36 +204,49 @@
         }, 1000);
     }
 
-    // Skip Button Logic
     skipBtn.addEventListener('click', () => {
         clearInterval(timerInterval);
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-        }
+        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
     });
 
-    function finishInterview() {
-        interviewContainer.classList.add('hidden');
-        resultsContainer.classList.remove('hidden');
-        
-        // Stop all tracks to turn off the camera light
-        stream.getTracks().forEach(track => track.stop());
-
-        // Generate download links
-        allRecordings.forEach((record, index) => {
-            const url = URL.createObjectURL(record.blob);
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            
-            div.innerHTML = `
-                <p><strong>Q${index + 1}:</strong> ${record.question}</p>
-                <video src="${url}" controls width="300" style="background:#000; display:block; margin: 10px 0; border-radius: 4px; transform: none;"></video>
-                <a href="${url}" download="Question_${index + 1}_Answer.webm">⬇ Download Answer ${index + 1}</a>
-            `;
-            resultsDiv.appendChild(div);
+    function blobToBase64(blob) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
         });
     }
-</script>
 
+    async function finishInterviewAndUpload() {
+        interviewContainer.classList.add('hidden');
+        uploadingContainer.classList.remove('hidden');
+        stream.getTracks().forEach(track => track.stop()); // Turn off camera light
+
+        // Upload videos one by one
+        for (let i = 0; i < allRecordings.length; i++) {
+            uploadStatus.innerText = `Uploading answer ${i + 1} of ${allRecordings.length}...`;
+            const record = allRecordings[i];
+            const base64Data = await blobToBase64(record.blob);
+            
+            const payload = {
+                filename: `Candidate_Q${record.questionNum}_Answer`,
+                mimeType: record.blob.type,
+                base64: base64Data
+            };
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            } catch (error) {
+                console.error("Upload failed for Q" + record.questionNum, error);
+            }
+        }
+
+        uploadingContainer.classList.add('hidden');
+        resultsContainer.classList.remove('hidden');
+    }
+</script>
 </body>
 </html>
