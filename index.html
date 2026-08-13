@@ -290,7 +290,8 @@
             interviewContainer.classList.remove('hidden');
             runQuestion(0);
         } catch (err) {
-            alert("Error accessing camera. Please ensure camera & microphone permissions are granted.");
+            alert("Camera Error: " + err.name + "\n\nDetails: " + err.message + "\n\nPlease try completely closing your web browser and opening it again.");
+            console.error(err);
         }
     });
 
