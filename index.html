@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Self-Recorded Video Interview</title>
+    <title>Video Recorded Responses</title>
     <style>
+        /* Base Styling */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            background-color: #f0f2f5;
             color: #333;
             display: flex;
             flex-direction: column;
@@ -18,79 +19,219 @@
             padding: 20px;
             box-sizing: border-box;
         }
+
+        /* Container for standard screens (Intro / Uploading) */
         .container {
             background: #fff;
-            padding: 30px;
+            padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
             max-width: 800px;
             width: 100%;
             text-align: center;
         }
-        video {
+
+        /* Side-by-Side VidCruiter Layout */
+        .interview-board {
+            display: flex;
+            gap: 25px;
             width: 100%;
-            max-width: 640px;
-            background: #000;
-            border-radius: 8px;
-            margin-top: 15px;
-            transform: scaleX(-1); /* Mirror effect */
-        }
-        #questionText { font-size: 1.5rem; margin: 20px 0; color: #2c3e50; min-height: 60px; }
-        .timer-box {
-            font-size: 2rem; font-weight: bold; margin: 15px 0; padding: 10px;
-            border-radius: 8px; display: inline-block; min-width: 150px;
-        }
-        .prep-mode { background: #f39c12; color: #fff; }
-        .record-mode { background: #e74c3c; color: #fff; animation: pulse 1.5s infinite; }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+            max-width: 1200px;
+            flex-wrap: wrap; /* Stacks gracefully on mobile phones */
+            align-items: stretch;
         }
 
-        button {
-            background: #3498db; color: #fff; border: none; padding: 12px 24px;
-            font-size: 1.1rem; border-radius: 6px; cursor: pointer; margin-top: 15px;
+        .column {
+            flex: 1;
+            min-width: 320px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        button:hover { background: #2980b9; }
+
+        /* Header Bars */
+        .top-bar {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .prep-active {
+            background-color: #e3f2fd;
+            border-bottom: 1px solid #b6d4fe;
+            color: #084298;
+        }
+
+        .record-active {
+            background-color: #f8d7da;
+            border-bottom: 1px solid #f5c2c7;
+            color: #842029;
+        }
+
+        /* Left Side: Question Area */
+        .faculty-placeholder {
+            background: #1e1e1e;
+            color: #fff;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .faculty-placeholder svg {
+            width: 50px;
+            height: 50px;
+            fill: currentColor;
+            opacity: 0.7;
+        }
+        .question-text-area {
+            padding: 30px;
+            font-size: 1.35rem;
+            font-weight: 500;
+            line-height: 1.5;
+            color: #2c3e50;
+            flex-grow: 1;
+        }
+
+        /* Right Side: Video Area */
+        .video-wrapper {
+            background: #000;
+            flex-grow: 1;
+            display: flex;
+            min-height: 250px;
+        }
+        video {
+            width: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        /* Action Buttons */
+        .action-area {
+            padding: 20px;
+            background: #fff;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        .btn {
+            padding: 16px 24px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-green {
+            background: #28a745;
+            color: #fff;
+        }
+        .btn-green:hover { background: #218838; }
+        
+        .btn-red {
+            background: #dc3545;
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+        .btn-red:hover { background: #c82333; }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        /* Misc */
         .hidden { display: none !important; }
         
         /* Loading Spinner */
         .loader {
             border: 6px solid #f3f3f3; border-top: 6px solid #3498db;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite; margin: 20px auto;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1s linear infinite; margin: 30px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<!-- Intro Screen -->
 <div class="container" id="introContainer">
-    <h1>Automated Video Interview</h1>
-    <p>You will be asked 6 questions.</p>
-    <button id="startBtn">Start Interview</button>
+    <h1 style="margin-top:0; color:#2c3e50;">Mock Video Interview</h1>
+    <p style="font-size: 1.2rem;">You will be asked <b><span id="totalQuestionsCount"></span> questions</b> today.</p>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: left; margin: 25px 0;">
+        <p style="margin-top:0; font-weight:bold;">How it works:</p>
+        <ul style="line-height: 1.6; margin-bottom: 0;">
+            <li>You will have <b>30 seconds</b> to read the prompt and mentally prepare.</li>
+            <li>You can skip the countdown early by clicking the green <b>Start Recording</b> button.</li>
+            <li>You will then have <b>2 minutes</b> to record your response.</li>
+            <li>If you finish answering early, click the red <b>Stop Recording and Save</b> button to advance.</li>
+        </ul>
+    </div>
+    
+    <button id="startBtn" class="btn btn-green" style="max-width: 250px;">Start Interview</button>
 </div>
 
-<div class="container hidden" id="interviewContainer">
-    <div id="statusText">Question <span id="qNumber">1</span> of 6</div>
-    <h2 id="questionText">Loading...</h2>
-    <div id="timerDisplay" class="timer-box prep-mode">00:30</div><br>
-    <video id="liveVideo" autoplay muted playsinline></video><br>
-    <button id="skipBtn" class="hidden">Finish Answer Early</button>
+<!-- VidCruiter Style Interview Board -->
+<div class="interview-board hidden" id="interviewContainer">
+    
+    <!-- Left Column: Prompt & Timer -->
+    <div class="column">
+        <div class="top-bar" id="leftTopBar">
+            <span id="leftTimerLabel">PREPARATION TIME</span>
+            <span id="leftTimerDisplay" style="font-size: 1.2rem; font-weight: 800;">00:30</span>
+        </div>
+        <div class="faculty-placeholder">
+            <!-- Simulated Faculty Prompt Video Area -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <span>Question <span id="qNumber">1</span></span>
+        </div>
+        <div class="question-text-area" id="questionText">Loading...</div>
+    </div>
+
+    <!-- Right Column: Camera & Action -->
+    <div class="column">
+        <div class="top-bar">
+            <span>Attempts Remaining: 0</span>
+            <span>Time Allowed: 2 Minutes</span>
+        </div>
+        <div class="video-wrapper">
+            <video id="liveVideo" autoplay muted playsinline></video>
+        </div>
+        <div class="action-area">
+            <button id="actionBtn" class="btn btn-green">Start Recording</button>
+        </div>
+    </div>
+
 </div>
 
+<!-- Uploading Screen -->
 <div class="container hidden" id="uploadingContainer">
-    <h2>Uploading your interview...</h2>
-    <p>Please do not close this window until the upload is complete.</p>
+    <h2 style="color:#2c3e50;">Uploading your interview...</h2>
+    <p>Please do not close this window or refresh the page until the upload is complete.</p>
     <div class="loader"></div>
-    <p id="uploadStatus">Uploading question 1 of 6...</p>
+    <p id="uploadStatus" style="font-size: 1.1rem; font-weight: bold; color: #084298;">Uploading question 1...</p>
 </div>
 
+<!-- Finished Screen -->
 <div class="container hidden" id="resultsContainer">
-    <h2>Interview Complete!</h2>
-    <p>Your answers have been successfully submitted to the hiring team. You may now close this window.</p>
+    <h2 style="color:#28a745;">Interview Complete!</h2>
+    <p style="font-size: 1.1rem; line-height: 1.5;">Thank you for completing your video responses. Your answers have been successfully submitted to the admissions team.</p>
+    <p>You may now safely close this window.</p>
 </div>
 
 <script>
@@ -117,21 +258,28 @@
     let recordedChunks = [];
     let allRecordings = [];
 
-    // Elements
+    // DOM Elements
     const introContainer = document.getElementById('introContainer');
     const interviewContainer = document.getElementById('interviewContainer');
     const uploadingContainer = document.getElementById('uploadingContainer');
     const resultsContainer = document.getElementById('resultsContainer');
+    
     const liveVideo = document.getElementById('liveVideo');
     const questionText = document.getElementById('questionText');
-    const timerDisplay = document.getElementById('timerDisplay');
     const qNumber = document.getElementById('qNumber');
-    const skipBtn = document.getElementById('skipBtn');
     const uploadStatus = document.getElementById('uploadStatus');
+    
+    const leftTopBar = document.getElementById('leftTopBar');
+    const leftTimerLabel = document.getElementById('leftTimerLabel');
+    const leftTimerDisplay = document.getElementById('leftTimerDisplay');
+    const actionBtn = document.getElementById('actionBtn');
 
+    // Auto-update instructions with accurate question count
+    document.getElementById('totalQuestionsCount').innerText = questions.length;
+
+    // Start Camera
     document.getElementById('startBtn').addEventListener('click', async () => {
         try {
-            // Low resolution requested to keep file sizes small for Google Drive
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: 480, height: 360 }, 
                 audio: true 
@@ -141,7 +289,7 @@
             interviewContainer.classList.remove('hidden');
             runQuestion(0);
         } catch (err) {
-            alert("Error accessing camera. Please ensure permissions are granted.");
+            alert("Error accessing camera. Please ensure camera & microphone permissions are granted.");
         }
     });
 
@@ -149,18 +297,29 @@
         return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
     }
 
+    // Phase 1: Preparation
     function runQuestion(index) {
         qNumber.innerText = index + 1;
         questionText.innerText = questions[index];
-        skipBtn.classList.add('hidden');
         
-        timerDisplay.className = 'timer-box prep-mode';
+        // Setup Prep UI
+        leftTopBar.className = 'top-bar prep-active';
+        leftTimerLabel.innerText = "PREPARATION TIME";
+        actionBtn.className = 'btn btn-green';
+        actionBtn.innerText = "Start Recording";
+        
         let timeLeft = PREP_TIME;
-        timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
+        leftTimerDisplay.innerText = formatTime(timeLeft);
+
+        // Click green button to skip prep
+        actionBtn.onclick = () => {
+            clearInterval(timerInterval);
+            startRecordingPhase();
+        };
 
         timerInterval = setInterval(() => {
             timeLeft--;
-            timerDisplay.innerText = "Prep: " + formatTime(timeLeft);
+            leftTimerDisplay.innerText = formatTime(timeLeft);
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 startRecordingPhase();
@@ -168,17 +327,31 @@
         }, 1000);
     }
 
+    // Phase 2: Recording
     function startRecordingPhase() {
         recordedChunks = [];
-        let options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 250000 };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) { options = {}; }
+        
+        // Waterfall encoding format fallback
+        let options = { mimeType: 'video/mp4;codecs=avc1,mp4a.40.2', videoBitsPerSecond: 250000 };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/webm;codecs=h264', videoBitsPerSecond: 250000 };
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 250000 };
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { videoBitsPerSecond: 250000 };
+        }
         
         mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
 
         mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: options.mimeType || 'video/mp4' });
-            allRecordings.push({ blob: blob, questionNum: currentQuestionIndex + 1 });
+            const actualMimeType = mediaRecorder.mimeType || 'video/webm';
+            const fileExt = actualMimeType.includes('mp4') ? 'mp4' : 'webm';
+            
+            const blob = new Blob(recordedChunks, { type: actualMimeType });
+            allRecordings.push({ blob: blob, questionNum: currentQuestionIndex + 1, ext: fileExt });
             
             currentQuestionIndex++;
             if (currentQuestionIndex < questions.length) {
@@ -189,26 +362,31 @@
         };
 
         mediaRecorder.start();
-        skipBtn.classList.remove('hidden');
         
-        timerDisplay.className = 'timer-box record-mode';
+        // Setup Record UI
+        leftTopBar.className = 'top-bar record-active';
+        leftTimerLabel.innerText = "ANSWER TIME";
+        actionBtn.className = 'btn btn-red';
+        actionBtn.innerText = "Stop Recording and Save";
+        
         let timeLeft = RECORD_TIME;
-        timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
+        leftTimerDisplay.innerText = formatTime(timeLeft);
+
+        // Click red button to finish answer early
+        actionBtn.onclick = () => {
+            clearInterval(timerInterval);
+            if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+        };
 
         timerInterval = setInterval(() => {
             timeLeft--;
-            timerDisplay.innerText = "Rec: " + formatTime(timeLeft);
+            leftTimerDisplay.innerText = formatTime(timeLeft);
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                mediaRecorder.stop();
+                if (mediaRecorder.state === 'recording') mediaRecorder.stop();
             }
         }, 1000);
     }
-
-    skipBtn.addEventListener('click', () => {
-        clearInterval(timerInterval);
-        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
-    });
 
     function blobToBase64(blob) {
         return new Promise((resolve) => {
@@ -218,7 +396,7 @@
         });
     }
 
-  async function finishInterviewAndUpload() {
+    async function finishInterviewAndUpload() {
         interviewContainer.classList.add('hidden');
         uploadingContainer.classList.remove('hidden');
         stream.getTracks().forEach(track => track.stop()); // Turn off camera light
@@ -230,8 +408,7 @@
             const base64Data = await blobToBase64(record.blob);
             
             const payload = {
-                // THE FIX IS HERE: Added .webm to the filename
-                filename: `Candidate_Q${record.questionNum}_Answer.webm`,
+                filename: `Candidate_Q${record.questionNum}_Answer.${record.ext}`,
                 mimeType: record.blob.type,
                 base64: base64Data
             };
