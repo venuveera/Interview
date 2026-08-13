@@ -37,7 +37,7 @@
             gap: 25px;
             width: 100%;
             max-width: 1200px;
-            flex-wrap: wrap; /* Stacks gracefully on mobile phones */
+            flex-wrap: wrap; 
             align-items: stretch;
         }
 
@@ -114,7 +114,7 @@
         video {
             width: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror effect */
+            transform: scaleX(-1); 
         }
 
         /* Action Buttons */
@@ -154,7 +154,6 @@
             100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
 
-        /* Misc */
         .hidden { display: none !important; }
         
         /* Loading Spinner */
@@ -168,7 +167,6 @@
 </head>
 <body>
 
-<!-- Intro Screen -->
 <div class="container" id="introContainer">
     <h1 style="margin-top:0; color:#2c3e50;">Mock Video Interview</h1>
     <p style="font-size: 1.2rem;">You will be asked <b><span id="totalQuestionsCount"></span> questions</b> today.</p>
@@ -186,24 +184,19 @@
     <button id="startBtn" class="btn btn-green" style="max-width: 250px;">Start Interview</button>
 </div>
 
-<!-- VidCruiter Style Interview Board -->
 <div class="interview-board hidden" id="interviewContainer">
-    
-    <!-- Left Column: Prompt & Timer -->
     <div class="column">
         <div class="top-bar" id="leftTopBar">
             <span id="leftTimerLabel">PREPARATION TIME</span>
             <span id="leftTimerDisplay" style="font-size: 1.2rem; font-weight: 800;">00:30</span>
         </div>
         <div class="faculty-placeholder">
-            <!-- Simulated Faculty Prompt Video Area -->
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
             <span>Question <span id="qNumber">1</span></span>
         </div>
         <div class="question-text-area" id="questionText">Loading...</div>
     </div>
 
-    <!-- Right Column: Camera & Action -->
     <div class="column">
         <div class="top-bar">
             <span>Attempts Remaining: 0</span>
@@ -216,10 +209,8 @@
             <button id="actionBtn" class="btn btn-green">Start Recording</button>
         </div>
     </div>
-
 </div>
 
-<!-- Uploading Screen -->
 <div class="container hidden" id="uploadingContainer">
     <h2 style="color:#2c3e50;">Uploading your interview...</h2>
     <p>Please do not close this window or refresh the page until the upload is complete.</p>
@@ -227,7 +218,6 @@
     <p id="uploadStatus" style="font-size: 1.1rem; font-weight: bold; color: #084298;">Uploading question 1...</p>
 </div>
 
-<!-- Finished Screen -->
 <div class="container hidden" id="resultsContainer">
     <h2 style="color:#28a745;">Interview Complete!</h2>
     <p style="font-size: 1.1rem; line-height: 1.5;">Thank you for completing your video responses. Your answers have been successfully submitted to the admissions team.</p>
@@ -238,16 +228,15 @@
     // ==========================================
     // 1. PASTE YOUR WEB APP URL HERE
     // ==========================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwa75utCUvbepZ0Q39mYPnum4rieCS3x8i0pZvfmy3m4BFO6q3CKnw7H84qrwmoPBMG/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXX/exec";
 
     const questions = [
         "Tell me about yourself",
         "Why LECOM/How did you find about LECOM?",
         "Why do you want to do Medicine?",
         "What is DO and how do you implement OMM tecniques",
-        "What Heroes in Training episode did you watch, and what did you learn??",
+        "What Heroes in Training episode did you watch, and what did you learn?",
         "What volunteering and service you did and how did it influence you?",
-        "What are your strengths and weaknesses?"
         "Anything else you would like LECOM to know about you?"
     ];
 
@@ -259,7 +248,6 @@
     let recordedChunks = [];
     let allRecordings = [];
 
-    // DOM Elements
     const introContainer = document.getElementById('introContainer');
     const interviewContainer = document.getElementById('interviewContainer');
     const uploadingContainer = document.getElementById('uploadingContainer');
@@ -275,10 +263,8 @@
     const leftTimerDisplay = document.getElementById('leftTimerDisplay');
     const actionBtn = document.getElementById('actionBtn');
 
-    // Auto-update instructions with accurate question count
     document.getElementById('totalQuestionsCount').innerText = questions.length;
 
-    // Start Camera
     document.getElementById('startBtn').addEventListener('click', async () => {
         try {
             stream = await navigator.mediaDevices.getUserMedia({ 
@@ -290,6 +276,7 @@
             interviewContainer.classList.remove('hidden');
             runQuestion(0);
         } catch (err) {
+            // Updated error catcher here!
             alert("Camera Error: " + err.name + "\n\nDetails: " + err.message + "\n\nPlease try completely closing your web browser and opening it again.");
             console.error(err);
         }
@@ -299,12 +286,10 @@
         return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
     }
 
-    // Phase 1: Preparation
     function runQuestion(index) {
         qNumber.innerText = index + 1;
         questionText.innerText = questions[index];
         
-        // Setup Prep UI
         leftTopBar.className = 'top-bar prep-active';
         leftTimerLabel.innerText = "PREPARATION TIME";
         actionBtn.className = 'btn btn-green';
@@ -313,7 +298,6 @@
         let timeLeft = PREP_TIME;
         leftTimerDisplay.innerText = formatTime(timeLeft);
 
-        // Click green button to skip prep
         actionBtn.onclick = () => {
             clearInterval(timerInterval);
             startRecordingPhase();
@@ -329,11 +313,9 @@
         }, 1000);
     }
 
-    // Phase 2: Recording
     function startRecordingPhase() {
         recordedChunks = [];
         
-        // Waterfall encoding format fallback
         let options = { mimeType: 'video/mp4;codecs=avc1,mp4a.40.2', videoBitsPerSecond: 250000 };
         if (!MediaRecorder.isTypeSupported(options.mimeType)) {
             options = { mimeType: 'video/webm;codecs=h264', videoBitsPerSecond: 250000 };
@@ -365,7 +347,6 @@
 
         mediaRecorder.start();
         
-        // Setup Record UI
         leftTopBar.className = 'top-bar record-active';
         leftTimerLabel.innerText = "ANSWER TIME";
         actionBtn.className = 'btn btn-red';
@@ -374,7 +355,6 @@
         let timeLeft = RECORD_TIME;
         leftTimerDisplay.innerText = formatTime(timeLeft);
 
-        // Click red button to finish answer early
         actionBtn.onclick = () => {
             clearInterval(timerInterval);
             if (mediaRecorder.state === 'recording') mediaRecorder.stop();
@@ -401,9 +381,8 @@
     async function finishInterviewAndUpload() {
         interviewContainer.classList.add('hidden');
         uploadingContainer.classList.remove('hidden');
-        stream.getTracks().forEach(track => track.stop()); // Turn off camera light
+        stream.getTracks().forEach(track => track.stop()); 
 
-        // Upload videos one by one
         for (let i = 0; i < allRecordings.length; i++) {
             uploadStatus.innerText = `Uploading answer ${i + 1} of ${allRecordings.length}...`;
             const record = allRecordings[i];
